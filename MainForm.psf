@@ -784,7 +784,7 @@ cPtLhwsqVtvhqumz3+CfYTe6w1MZtySvn8j2s9hnE+xV73vbVnprfa+X7Z9pNS7zCs0u1fgc6dLv
 5nc6VDXDlij9rjFFyvYHQ/P7N/3u78eNjKVhxe/a2DLEvpLUK9ZEMTcLNZycxCT5Yjl3zoXgAiZ8
 oxBj4xwiKtrrLJrz3ddEFZ8wZUTMiBXj1Q15JMA5j8wuTXwR9fBzQRIrFFuS6M+w/T8Q0LO9VzsA
 AA==</Form>
-  <Code><![CDATA[#$global_session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://exchange2013.bbdes.org/Powershell
+  <Code><![CDATA[$global_session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://exchange2013.bbdes.org/Powershell
 $validationArray = @($textboxFirstName, $textboxMiddleInitial, $textboxLastName, $textboxDisplayName, `
 	$textboxUsername, $textboxPassword, $textboxJobTitles, `
 	$checkedlistboxOU, $checkedlistboxOffice)
@@ -868,9 +868,7 @@ function Validate-IsName ([string]$Name, [int]$MaxLength)
 }
 
 $formNewUser_Load={
-	#TODO: Initialize Form Controls here
-	#Import-PSSession $global_session # Import sessions after OK button pressed
-	
+	#TODO: Initialize Form Controls here	
 	$script:OU = Get-ADOrganizationalUnit -Filter '*' | where { $_.DistinguishedName -match '_ActiveEmployees' }
 	# $OU | foreach{ if ($_.Name -notmatch '_') { write-host $_.name } }
 	$OU | foreach{
@@ -964,11 +962,12 @@ function Update-ListBox
 $formNewUser_FormClosing=[System.Windows.Forms.FormClosingEventHandler]{
 #Event Argument: $_ = [System.Windows.Forms.FormClosingEventArgs]
 	#TODO: Place custom script here
-	#Remove-PSSession $global_session
+	Remove-PSSession $global_session
 }
 
 $buttonOK_Click={
 	#TODO: Place custom script here
+	#verify whether all fields passed validation or not
 	$fail = 0
 	foreach($v in $validationArray)
 	{
@@ -977,20 +976,47 @@ $buttonOK_Click={
 			$fail+=1
 		}
 	}
-	if ($fail -eq 1)
+	
+	#Test to see if username already exists
+	$usernameExists = Get-ADUser -Identity $textboxUsername.Text
+	
+	#if failed display error in richtextbox else create user
+	if ($fail -ne 0 -or $usernameExists -eq $true)
 	{
 		Write-Host "You failed again"
 		$richtextboxConfirm.Clear()
-		$richtextboxConfirm.AppendText("Please verify all information is filled out or checked off...")
+		if ($fail -ne 0)
+		{
+			$richtextboxConfirm.AppendText("Please verify all information is filled out or checked off...`n")
+		}
+		if ($usernameExists -eq $true)
+		{
+			$richtextboxConfirm.AppendText("Username already exists - " + $textboxUsername.Text)	
+		}
 	}
 	else
 	{
 		Write-Host "Creating new user!"
+		
+		#Import sessions after OK button pressed
+		Import-PSSession $global_session
+		
+		#get OU in correct format
+		$userOU = $OU.DistinguishedName -match $checkedlistboxOU.CheckedItems
+		$userPNAME = $textboxUsername.Text + $textboxDomainName.Text
+		$password = ConvertTo-SecureString -String $textboxPassword.Text -AsPlainText -Force
+		$resetPLOGON = $checkboxResetUsersPasswordAt.Checked
+		
+		#create user account (might need to add mailbox database location, after alias before name)
+		New-Mailbox -UserPrincipalName $userPNAME -Alias $textboxUsername.Text -Name $textboxDisplayName.Text -OrganizationalUnit $userOU `
+					-Password $password -FirstName $textboxFirstName.Text -Initials $textboxMiddleInitial.Text -LastName $textboxLastName.Text -DisplayName $textboxDisplayName.Text `
+					-ResetPasswordOnNextLogon $resetPLOGON
 	}
 }
 
 $buttonCancel_Click={
 	#TODO: Place custom script here
+	Remove-PSSession $global_session
 	$formNewUser.Close()
 }
 
@@ -1103,8 +1129,9 @@ $textboxLastName_Validating=[System.ComponentModel.CancelEventHandler]{
 $textboxDisplayName_Validating = [System.ComponentModel.CancelEventHandler]{
 	#Event Argument: $_ = [System.ComponentModel.CancelEventArgs]
 	#Check if the Name field is empty
-	$result = -not (Validate-IsName $textboxDisplayName.Text -MaxLength $textboxDisplayName.MaxLength)
-	if ($result -eq $true)
+	#$result = -not (Validate-IsName $textboxDisplayName.Text -MaxLength $textboxDisplayName.MaxLength)
+	#if ($result -eq $true)
+	if ($textboxDisplayName.Text -eq "")
 	{
 		#Display an error message
 		$errorprovider1.SetError($textboxDisplayName, "Please enter a valid display name.")
@@ -1138,8 +1165,9 @@ $textboxUsername_Validating=[System.ComponentModel.CancelEventHandler]{
 $textboxPassword_Validating=[System.ComponentModel.CancelEventHandler]{
 #Event Argument: $_ = [System.ComponentModel.CancelEventArgs]
 	#Check if the Name field is empty
-	$result = -not (Validate-IsName $textboxPassword.Text -MaxLength $textboxPassword.MaxLength)
-	if ($result -eq $true)
+	#$result = -not (Validate-IsName $textboxPassword.Text -MaxLength $textboxPassword.MaxLength)
+	#if ($result -eq $true)
+	if ($textboxPassword.Text -eq "")
 	{
 		#Display an error message
 		$errorprovider1.SetError($textboxPassword, "Please enter a valid password.")
@@ -1202,6 +1230,6 @@ $checkboxResetUsersPasswordAt_Validating = [System.ComponentModel.CancelEventHan
 	Update-RichTextBox
 }
 #endregion]]></Code>
-  <Mode>0</Mode>
+  <Mode>1</Mode>
   <Assemblies />
 </File>
