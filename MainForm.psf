@@ -978,10 +978,13 @@ $buttonOK_Click={
 	}
 	
 	#Test to see if username already exists
-	$usernameExists = Get-ADUser -Identity $textboxUsername.Text
+	if (Get-ADUser -Identity $textboxUsername.Text)
+	{
+		$usernameTaken = $true
+	}
 	
 	#if failed display error in richtextbox else create user
-	if ($fail -ne 0 -or $usernameExists -eq $true)
+	if ($fail -ne 0 -or $usernameTaken -eq $true)
 	{
 		Write-Host "You failed again"
 		$richtextboxConfirm.Clear()
@@ -989,7 +992,7 @@ $buttonOK_Click={
 		{
 			$richtextboxConfirm.AppendText("Please verify all information is filled out or checked off...`n")
 		}
-		if ($usernameExists -eq $true)
+		if ($usernameTaken -eq $true)
 		{
 			$richtextboxConfirm.AppendText("Username already exists - " + $textboxUsername.Text)	
 		}
@@ -1001,7 +1004,7 @@ $buttonOK_Click={
 		#Import sessions after OK button pressed
 		Import-PSSession $global_session
 		
-		#get OU in correct format
+		#get OU in correct format, get userprincipalname, password and if reset password at logon or not
 		$userOU = $OU.DistinguishedName -match $checkedlistboxOU.CheckedItems
 		$userPNAME = $textboxUsername.Text + $textboxDomainName.Text
 		$password = ConvertTo-SecureString -String $textboxPassword.Text -AsPlainText -Force
@@ -1011,6 +1014,7 @@ $buttonOK_Click={
 		New-Mailbox -UserPrincipalName $userPNAME -Alias $textboxUsername.Text -Name $textboxDisplayName.Text -OrganizationalUnit $userOU `
 					-Password $password -FirstName $textboxFirstName.Text -Initials $textboxMiddleInitial.Text -LastName $textboxLastName.Text -DisplayName $textboxDisplayName.Text `
 					-ResetPasswordOnNextLogon $resetPLOGON
+		
 	}
 }
 
@@ -1149,6 +1153,13 @@ $textboxUsername_Validating=[System.ComponentModel.CancelEventHandler]{
 #Event Argument: $_ = [System.ComponentModel.CancelEventArgs]
 	#Check if the Name field is empty
 	$result = -not (Validate-IsName $textboxUsername.Text -MaxLength $textboxUsername.MaxLength)
+	
+	#Check if username is length of BBD username length
+	#if ($result -lt 3)
+	#{
+	#	$result = $true
+	#}
+	
 	if ($result -eq $true)
 	{
 		#Display an error message
