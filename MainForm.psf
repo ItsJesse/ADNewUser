@@ -786,8 +786,7 @@ oxBj4xwiKtrrLJrz3ddEFZ8wZUTMiBXj1Q15JMA5j8wuTXwR9fBzQRIrFFuS6M+w/T8Q0LO9VzsA
 AA==</Form>
   <Code><![CDATA[$global_session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://exchange2013.bbdes.org/Powershell
 $validationArray = @($textboxFirstName, $textboxMiddleInitial, $textboxLastName, $textboxDisplayName, `
-	$textboxUsername, $textboxPassword, $textboxJobTitles, `
-	$checkedlistboxOU, $checkedlistboxOffice)
+	$textboxUsername, $textboxPassword, $textboxJobTitles, $checkedlistboxOU, $checkedlistboxOffice)
 
 #functions
 function Update-RichTextBox
@@ -968,6 +967,9 @@ $formNewUser_FormClosing=[System.Windows.Forms.FormClosingEventHandler]{
 $buttonOK_Click={
 	#TODO: Place custom script here
 	#verify whether all fields passed validation or not
+	$buttonOK.Enabled = $false
+	$buttonCancel.Enabled = $false
+	
 	$fail = 0
 	foreach($v in $validationArray)
 	{
@@ -994,8 +996,12 @@ $buttonOK_Click={
 		}
 		if ($usernameTaken -eq $true)
 		{
-			$richtextboxConfirm.AppendText("Username already exists - " + $textboxUsername.Text)	
+			$richtextboxConfirm.AppendText("Username already exists - " + $textboxUsername.Text)
 		}
+		
+		$buttonOK.Enabled = $true
+		$buttonCancel.Enabled = $true
+		
 	}
 	else
 	{
@@ -1010,11 +1016,16 @@ $buttonOK_Click={
 		$password = ConvertTo-SecureString -String $textboxPassword.Text -AsPlainText -Force
 		$resetPLOGON = $checkboxResetUsersPasswordAt.Checked
 		
-		#create user account (might need to add mailbox database location, after alias before name)
+		<#create user account (might need to add mailbox database location, after alias before name)
 		New-Mailbox -UserPrincipalName $userPNAME -Alias $textboxUsername.Text -Name $textboxDisplayName.Text -OrganizationalUnit $userOU `
 					-Password $password -FirstName $textboxFirstName.Text -Initials $textboxMiddleInitial.Text -LastName $textboxLastName.Text -DisplayName $textboxDisplayName.Text `
 					-ResetPasswordOnNextLogon $resetPLOGON
+		#>
+		$richtextboxConfirm.Clear()
+		$richtextboxConfirm.AppendText("Account for " + $textboxDisplayName.Text + " was successfully created.")
 		
+		$buttonOK.Enabled = $true
+		$buttonCancel.Enabled = $true
 	}
 }
 
