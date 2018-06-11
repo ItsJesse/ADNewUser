@@ -1016,11 +1016,11 @@ $buttonOK_Click={
 		$password = ConvertTo-SecureString -String $textboxPassword.Text -AsPlainText -Force
 		$resetPLOGON = $checkboxResetUsersPasswordAt.Checked
 		
-		<#create user account (might need to add mailbox database location, after alias before name)
+		#create user account (might need to add mailbox database location, after alias before name)
 		New-Mailbox -UserPrincipalName $userPNAME -Alias $textboxUsername.Text -Name $textboxDisplayName.Text -OrganizationalUnit $userOU `
 					-Password $password -FirstName $textboxFirstName.Text -Initials $textboxMiddleInitial.Text -LastName $textboxLastName.Text -DisplayName $textboxDisplayName.Text `
 					-ResetPasswordOnNextLogon $resetPLOGON
-		#>
+		
 		$richtextboxConfirm.Clear()
 		$richtextboxConfirm.AppendText("Account for " + $textboxDisplayName.Text + " was successfully created.")
 		
