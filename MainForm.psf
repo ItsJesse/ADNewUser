@@ -784,7 +784,9 @@ cPtLhwsqVtvhqumz3+CfYTe6w1MZtySvn8j2s9hnE+xV73vbVnprfa+X7Z9pNS7zCs0u1fgc6dLv
 5nc6VDXDlij9rjFFyvYHQ/P7N/3u78eNjKVhxe/a2DLEvpLUK9ZEMTcLNZycxCT5Yjl3zoXgAiZ8
 oxBj4xwiKtrrLJrz3ddEFZ8wZUTMiBXj1Q15JMA5j8wuTXwR9fBzQRIrFFuS6M+w/T8Q0LO9VzsA
 AA==</Form>
-  <Code><![CDATA[$global_session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://exchange2013.bbdes.org/Powershell
+  <Code><![CDATA[#Add users to corresponding _Location security group for whichever OU they are a part of.
+
+$global_session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://exchange2013.bbdes.org/Powershell
 $validationArray = @($textboxFirstName, $textboxMiddleInitial, $textboxLastName, $textboxDisplayName, `
 	$textboxUsername, $textboxPassword, $textboxJobTitles, $checkedlistboxOU, $checkedlistboxOffice)
 
@@ -864,6 +866,42 @@ function Validate-IsName ([string]$Name, [int]$MaxLength)
 	}
 	
 	return $Name -match "^[a-zA-Z''-'\s]{1,$MaxLength}$"
+}
+
+function AddTo-SecurityGroups
+{
+	param (
+		[Parameter(Mandatory = $true)]
+		[string]$OU,
+		[Parameter(Mandatory = $true)]
+		[string]$Location,
+		[Parameter(Mandatory = $true)]
+		[string]$User
+	)
+	
+	Get-ADGroup -Filter * -SearchBase $OU | Add-ADGroupMember -Identity $_ -Members $User
+	
+	Add-ADGroupMember -Identity "All BBDES employees" -Members $User
+	
+	if ($Location -contains 'Christiana' -or $Location -contains 'Concord')
+	{
+		Add-ADGroupMember -Identity "Christiana" -Members $User
+		Add-ADGroupMember -Identity "Christiana Users" -Members $User
+	}
+	elseif ($Location -contains 'Dover')
+	{
+		Add-ADGroupMember -Identity "Dover" -Members $User
+		Add-ADGroupMember -Identity "Dover Users" -Members $User
+	}
+	elseif ($Location -contains 'Salisbury')
+	{
+		Add-ADGroupMember -Identity "Salisbury" -Members $User
+		Add-ADGroupMember -Identity "Salisbury Users" -Members $User
+	}
+	elseif ($Location -contains 'Mobiles')
+	{
+		Add-ADGroupMember -Identity "KSM Users" -Members $User
+	}
 }
 
 $formNewUser_Load={
@@ -1020,6 +1058,8 @@ $buttonOK_Click={
 		New-Mailbox -UserPrincipalName $userPNAME -Alias $textboxUsername.Text -Name $textboxDisplayName.Text -OrganizationalUnit $userOU `
 					-Password $password -FirstName $textboxFirstName.Text -Initials $textboxMiddleInitial.Text -LastName $textboxLastName.Text -DisplayName $textboxDisplayName.Text `
 					-ResetPasswordOnNextLogon $resetPLOGON
+		
+		AddTo-SecurityGroups -OU $userOU -Location $checkedlistboxOffice.CheckedItems -User $textboxUsername.Text
 		
 		$richtextboxConfirm.Clear()
 		$richtextboxConfirm.AppendText("Account for " + $textboxDisplayName.Text + " was successfully created.")
