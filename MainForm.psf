@@ -1448,9 +1448,8 @@ $checkboxResetUsersPasswordAt_Validating = [System.ComponentModel.CancelEventHan
 
 $textboxProfilePath_TextChanged={
 	#TODO: Place custom script here
-	Write-Host "testing profile path"
 	$ppathInUse = Validate-Path -Path $textboxProfilePath.Text -ProfileOrNetwork "profile"
-	Write-Host "ppathinuse = " + $ppathInUse
+	
 	if ($ppathInUse -eq $true)
 	{
 		$errorprovider1.SetError($textboxProfilePath, "Profile path already exists.")
@@ -1463,9 +1462,8 @@ $textboxProfilePath_TextChanged={
 
 $textboxNetworkDrive_TextChanged={
 	#TODO: Place custom script here
-	Write-Host "testing network path"
 	$npathInUse = Validate-Path -Path $textboxNetworkDrive.Text -ProfileOrNetwork "network"
-	Write-Host "npathinuse = " + $npathInUse
+	
 	if ($npathInUse -eq $true)
 	{
 		$errorprovider1.SetError($textboxNetworkDrive, "Network drive path already exists.")
