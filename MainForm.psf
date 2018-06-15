@@ -1445,7 +1445,6 @@ $checkboxResetUsersPasswordAt_Validating = [System.ComponentModel.CancelEventHan
 	#Event Argument: $_ = [System.ComponentModel.CancelEventArgs]
 	Update-RichTextBox
 }
-#endregion
 
 $textboxProfilePath_TextChanged={
 	#TODO: Place custom script here
@@ -1476,6 +1475,7 @@ $textboxNetworkDrive_TextChanged={
 		$errorprovider1.SetError($textboxNetworkDrive, "")
 	}
 }
+#endregion
 ]]></Code>
   <Mode>1</Mode>
   <Assemblies />
