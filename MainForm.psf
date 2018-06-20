@@ -902,8 +902,7 @@ k8/zpTiGXStTnzeMj5nBPeoIyjYkNEXvBdSbuXiRYzPwO08104iP2TXqN5kFfVI2khL0MWC7GPdZ
 SVNznhob7sGmCtyoGj/mCd2ANZSt2X0LZMmgV1R5pjXdkB+DHpQZVePKDPzTs0Hvh1Ei2w6Q80dm
 ZsQw3i8aNVN+gJtyPpYipGPlfTpjfgnBhZrtmSoDG2cO0dZmobXKB/+YQpMIU0ZEyKYlma7JI1E8
 s0l458o/vtiP1iK+NsvViN55nf8AbskzccNDAAA=</Form>
-  <Code><![CDATA[# Add clear all boxes after user created
-# Correct office (maybe to match what is currently used in AD)
+  <Code><![CDATA[# Correct office (maybe to match what is currently used in AD)
 # Example Office = CC - SchedulingAndRecruiting should be Donor Recruiting
 
 $global_session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://exchange2013.bbdes.org/Powershell
@@ -1031,6 +1030,29 @@ function Validate-Path([string]$Path, [string]$ProfileOrNetwork)
 	}
 }
 
+function Get-Description()
+{
+	# Get Description
+	if ($checkedlistboxOffice.SelectedItem -match "Christiana")
+	{
+		$descript = "CC - $($textboxJobTitles.Text)"
+	}
+	elseif ($checkedlistboxOffice.SelectedItem -match "Dover")
+	{
+		$descript = "DC - $($textboxJobTitles.Text)"
+	}
+	elseif ($checkedlistboxOffice.SelectedItem -match "Salisbury")
+	{
+		$descript = "SC - $($textboxJobTitles.Text)"
+	}
+	elseif ($checkedlistboxOffice.SelectedItem -match "Mobiles")
+	{
+		$descript = "KSM - $($textboxJobTitles.Text)"
+	}
+	
+	return $descript
+}
+
 function AddTo-SecurityGroups
 {
 	param (
@@ -1076,17 +1098,12 @@ $formNewUser_Load={
 	Import-PSSession $global_session
 	
 	$script:OU = Get-ADOrganizationalUnit -Filter '*' | where { $_.DistinguishedName -match '_ActiveEmployees' }
-	# $OU | foreach{ if ($_.Name -notmatch '_') { write-host $_.name } }
 	$OU | foreach{
 		if ($_.Name -notmatch '_' -and $_.Name -notmatch 'DonorServices' -and $_.Name -ne 'Lab')
 		{
 			$checkedlistboxOU.Items.Add($_.Name)		
 		}
 	}
-	
-	#$test = Get-ADUser -Identity jrs
-	#$test | foreach{ $richtextboxConfirm.AppendText($_ | Out-String) }
-	
 }
 
 #region Control Helper Functions
@@ -1194,6 +1211,7 @@ $buttonOK_Click={
 	if ($fail -ne 0)
 	{
 		Write-Host "You failed again"
+		
 		$richtextboxConfirm.Clear()
 		$richtextboxConfirm.AppendText("Please verify all information is filled out or checked off...`n")
 		
@@ -1205,26 +1223,9 @@ $buttonOK_Click={
 	{
 		Write-Host "Creating new user!"
 		
-		# Get Description
-		if ($checkedlistboxOffice.SelectedItem -match "Christiana")
-		{
-			$descript = "CC - $($textboxJobTitles.Text)"
-		}
-		elseif ($checkedlistboxOffice.SelectedItem -match "Dover")
-		{
-			$descript = "DC - $($textboxJobTitles.Text)"
-		}
-		elseif ($checkedlistboxOffice.SelectedItem -match "Salisbury")
-		{
-			$descript = "SC - $($textboxJobTitles.Text)"
-		}
-		elseif ($checkedlistboxOffice.SelectedItem -match "Mobiles")
-		{
-			$descript = "KSM - $($textboxJobTitles.Text)"
-		}
+		$descript = Get-Description
 		
 		#get OU in correct format, get userprincipalname, password and if reset password at logon or not
-		$userOU = $OU.DistinguishedName -match $checkedlistboxOU.SelectedItem
 		$userPNAME = $textboxUsername.Text + $textboxDomainName.Text
 		$password = ConvertTo-SecureString -String $textboxPassword.Text -AsPlainText -Force
 		$resetPLOGON = $checkboxResetUsersPasswordAt.Checked
@@ -1253,6 +1254,18 @@ $buttonOK_Click={
 		$richtextboxConfirm.Clear()
 		$richtextboxConfirm.AppendText("Account for " + $textboxDisplayName.Text + " was successfully created.")
 		
+		#clear all boxes
+		$textboxFirstName.Clear()
+		$textboxMiddleInitial.Clear()
+		$textboxLastName.Clear()
+		$textboxDisplayName.Clear()
+		$textboxUsername.Clear()
+		$textboxProfilePath.Text = "\\acheron\profile\"
+		$textboxNetworkDrive.Text = "\\triton\users\"
+		$checkboxResetUsersPasswordAt.Checked = $false
+		$checkedlistboxOffice.ClearSelected()
+		$checkedlistboxOU.ClearSelected()
+		
 		$buttonOK.Enabled = $true
 		$buttonCancel.Enabled = $true
 	}
@@ -1279,26 +1292,6 @@ $checkedlistboxOU_ItemCheck=[System.Windows.Forms.ItemCheckEventHandler]{
 			}
 		}
 	}
-	
-	<#
-	# populate list for job titles
-	$checkedJobTitles.Items.Clear()
-	$a = @()
-	$userOU = $OU -match $checkedlistboxOU.CheckedItems
-	Write-Host $userOU
-	$users = Get-ADUser -Filter * -Properties Title | where { $_.DistinguishedName -match $userOU }
-	Write-Host $users
-	$users | foreach{
-		if ($a -notcontains $_.Title)
-		{
-			$a += $_.Title	
-		}
-	}
-	foreach($t in $a)
-	{
-		$checkedJobTitles.Items.Add($t)
-	}
-	#>
 }
 
 $checkedlistboxOffice_ItemCheck=[System.Windows.Forms.ItemCheckEventHandler]{
